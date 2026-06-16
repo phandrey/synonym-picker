@@ -77,6 +77,10 @@ final class LlamaServerManager {
     cachedModelFileURL() != nil
   }
 
+  func isRuntimeInstalled() -> Bool {
+    findExecutableURL() != nil
+  }
+
   func modelDownloadProgress() -> Double {
     if isModelDownloaded() {
       return 1

@@ -11,6 +11,7 @@
 - `SPM-036-fullscreen-overlay-clickaway-quality-audit`
 - `SPM-037-status-menu-controls`
 - `SPM-038-public-github-release-prep`
+- `SPM-039-runtime-install-helper`
 
 ## Done
 - `SPM-001-project-bootstrap`

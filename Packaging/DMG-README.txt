@@ -7,7 +7,5 @@ Install Synonym Picker
 5. Download the model from the Synonym Picker menu bar item.
 
 Runtime note:
-Synonym Picker uses llama.cpp for local AI inference. If the app shows the
-model runtime as missing, install llama.cpp with Homebrew:
-
-brew install llama.cpp
+Synonym Picker uses llama.cpp for local AI inference. If llama.cpp is missing,
+click the model row in the menu bar and approve the Terminal installer.

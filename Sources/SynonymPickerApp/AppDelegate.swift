@@ -4,6 +4,7 @@ import Carbon
 private enum ModelMenuState: Equatable {
   case checking
   case missingRuntime
+  case installingRuntime
   case needsDownload
   case downloading(Double)
   case starting
@@ -19,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   private let textReplacementService = TextReplacementService()
   private let synonymProvider = LocalSynonymProvider()
   private let llamaServerManager = LlamaServerManager()
+  private let runtimeInstaller = RuntimeInstaller()
   private var currentHotkey: AppHotkey?
   private var statusItem: NSStatusItem?
   private var statusMenu: NSMenu?
@@ -28,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   private var modelMenuState: ModelMenuState = .checking
   private var modelDownloadTask: Task<Void, Never>?
   private var modelProgressTask: Task<Void, Never>?
+  private var runtimeInstallWatchTask: Task<Void, Never>?
   private var settingsWindowController: SettingsWindowController?
   private var hotkeyRecorder: HotkeyRecorder?
   private var mockSuggestionsWindowController: MockSuggestionsWindowController?
@@ -60,6 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationWillTerminate(_ notification: Notification) {
     modelDownloadTask?.cancel()
     modelProgressTask?.cancel()
+    runtimeInstallWatchTask?.cancel()
     llamaServerManager.stop()
   }
 
@@ -151,7 +155,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   @objc private func downloadModelFromStatusMenu() {
-    startModelDownload()
+    switch modelMenuState {
+    case .missingRuntime:
+      startRuntimeInstall()
+    case .checking, .installingRuntime, .downloading, .starting, .ready:
+      break
+    case .needsDownload, .failed:
+      startModelDownload()
+    }
   }
 
   @objc private func quit() {
@@ -332,7 +343,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     switch modelMenuState {
     case .checking, .needsDownload, .downloading:
       modelMenuState = .ready
-    case .missingRuntime, .starting, .ready, .failed:
+    case .missingRuntime, .installingRuntime, .starting, .ready, .failed:
       break
     }
   }
@@ -440,6 +451,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       return
     }
 
+    guard llamaServerManager.isRuntimeInstalled() else {
+      modelMenuState = .missingRuntime
+      appState.setModelStatus("Missing Runtime")
+      refreshStatusMenuItems()
+      startRuntimeInstall()
+      return
+    }
+
     modelMenuState = .downloading(llamaServerManager.modelDownloadProgress())
     appState.setModelStatus("Downloading")
     refreshStatusMenuItems()
@@ -460,6 +479,68 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       modelDownloadTask = nil
       applyRuntimeStatus(runtimeStatus)
     }
+  }
+
+  private func startRuntimeInstall() {
+    guard runtimeInstallWatchTask == nil else {
+      return
+    }
+
+    switch runtimeInstaller.promptAndStartInstall() {
+    case .started:
+      modelMenuState = .installingRuntime
+      appState.setModelStatus("Installing Runtime")
+      refreshStatusMenuItems()
+      watchRuntimeInstallAndContinueDownload()
+    case .commandCopied:
+      modelMenuState = .missingRuntime
+      appState.setModelStatus("Command Copied")
+      refreshStatusMenuItems()
+    case .homebrewMissing:
+      modelMenuState = .missingRuntime
+      appState.setModelStatus("Install Homebrew")
+      refreshStatusMenuItems()
+    case .cancelled:
+      modelMenuState = .missingRuntime
+      appState.setModelStatus("Missing Runtime")
+      refreshStatusMenuItems()
+    case .failed(let message):
+      modelMenuState = .failed(message)
+      appState.setModelStatus("Install Failed")
+      refreshStatusMenuItems()
+      showRuntimeInstallError(message)
+    }
+  }
+
+  private func watchRuntimeInstallAndContinueDownload() {
+    runtimeInstallWatchTask?.cancel()
+    runtimeInstallWatchTask = Task { @MainActor in
+      let deadline = Date().addingTimeInterval(30 * 60)
+
+      while !Task.isCancelled && Date() < deadline {
+        if llamaServerManager.isRuntimeInstalled() {
+          runtimeInstallWatchTask = nil
+          startModelDownload()
+          return
+        }
+
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+      }
+
+      runtimeInstallWatchTask = nil
+      modelMenuState = .missingRuntime
+      appState.setModelStatus("Missing Runtime")
+      refreshStatusMenuItems()
+    }
+  }
+
+  private func showRuntimeInstallError(_ message: String) {
+    let alert = NSAlert()
+    alert.alertStyle = .warning
+    alert.messageText = "Could not start runtime installer"
+    alert.informativeText = message
+    alert.addButton(withTitle: "OK")
+    alert.runModal()
   }
 
   private func applyRuntimeStatus(_ runtimeStatus: LlamaServerManager.RuntimeStatus) {
@@ -487,6 +568,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       return "Model: \(modelName)  Checking"
     case .missingRuntime:
       return "Model: Install llama.cpp"
+    case .installingRuntime:
+      return "Model: Installing llama.cpp"
     case .needsDownload:
       return "Model: \(modelName)  ↓ Download"
     case .downloading(let progress):
@@ -502,9 +585,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   private var isModelMenuActionEnabled: Bool {
     switch modelMenuState {
-    case .needsDownload, .failed:
+    case .missingRuntime, .needsDownload, .failed:
       true
-    case .checking, .missingRuntime, .downloading, .starting, .ready:
+    case .checking, .installingRuntime, .downloading, .starting, .ready:
       false
     }
   }
@@ -514,7 +597,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   ) -> String {
     switch status {
     case .missingRuntime:
-      return "llama-server is not installed. Install: brew install llama.cpp"
+      return "llama-server is not installed. Click Model: Install llama.cpp in the menu bar."
     case .starting:
       return "Local model is still starting. Try the hotkey again in a few seconds."
     case .runningExternal, .runningManaged:
