@@ -12,6 +12,7 @@
 - `SPM-037-status-menu-controls`
 - `SPM-038-public-github-release-prep`
 - `SPM-039-runtime-install-helper`
+- `SPM-040-fullscreen-space-presentation`
 
 ## Done
 - `SPM-001-project-bootstrap`

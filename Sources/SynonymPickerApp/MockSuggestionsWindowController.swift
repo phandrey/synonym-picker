@@ -1,6 +1,16 @@
 import AppKit
 import SwiftUI
 
+private let suggestionsOverlayCollectionBehavior: NSWindow.CollectionBehavior = [
+  .canJoinAllApplications,
+  .canJoinAllSpaces,
+  .fullScreenAuxiliary,
+  .ignoresCycle,
+  .stationary,
+]
+
+private let dockBundleIdentifier = "com.apple.dock"
+
 @MainActor
 private final class SuggestionSelectionState: ObservableObject {
   let suggestions: [String]
@@ -59,6 +69,8 @@ final class MockSuggestionsWindowController: NSWindowController, NSWindowDelegat
   private var keyEventMonitor: Any?
   private var localMouseEventMonitor: Any?
   private var globalMouseEventMonitor: Any?
+  private var pendingPresentationWorkItem: DispatchWorkItem?
+  private var pendingPresentationID: UUID?
   private var selectionState: SuggestionSelectionState?
   private var sourceApplication: NSRunningApplication?
   private var onChoose: ((String, NSRunningApplication?) -> Void)?
@@ -80,13 +92,7 @@ final class MockSuggestionsWindowController: NSWindowController, NSWindowDelegat
     panel.becomesKeyOnlyIfNeeded = true
     panel.hidesOnDeactivate = false
     panel.backgroundColor = .clear
-    panel.collectionBehavior = [
-      .canJoinAllApplications,
-      .canJoinAllSpaces,
-      .fullScreenAuxiliary,
-      .ignoresCycle,
-      .stationary,
-    ]
+    panel.collectionBehavior = suggestionsOverlayCollectionBehavior
     panel.contentView?.wantsLayer = true
     panel.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
 
@@ -113,6 +119,14 @@ final class MockSuggestionsWindowController: NSWindowController, NSWindowDelegat
     self.sourceApplication = sourceApplication
     self.onChoose = onChoose
 
+    cancelPendingPresentation()
+    stopDismissLifecycle()
+
+    guard !isMissionControlApplication(sourceApplication) else {
+      window.orderOut(nil)
+      return
+    }
+
     window.contentViewController = NSHostingController(
       rootView: MockSuggestionsView(
         payload: payload,
@@ -125,6 +139,85 @@ final class MockSuggestionsWindowController: NSWindowController, NSWindowDelegat
         }
       )
     )
+
+    window.orderOut(nil)
+
+    let restoredSourceApplication = restoreSourceApplicationForPresentation(sourceApplication)
+    let presentationDelay = restoredSourceApplication ? 0.15 : 0
+    schedulePresentation(
+      payload: payload,
+      sourceProcessIdentifier: sourceApplication?.processIdentifier,
+      delay: presentationDelay,
+      missionControlRetryCount: 0
+    )
+  }
+
+  func windowWillClose(_ notification: Notification) {
+    cancelPendingPresentation()
+    stopDismissLifecycle()
+  }
+
+  private func schedulePresentation(
+    payload: SuggestionPopupPayload,
+    sourceProcessIdentifier: pid_t?,
+    delay: TimeInterval,
+    missionControlRetryCount: Int
+  ) {
+    cancelPendingPresentation()
+
+    let presentationID = UUID()
+    let workItem = DispatchWorkItem { [weak self] in
+      Task { @MainActor [weak self] in
+        self?.presentWindow(
+          payload: payload,
+          sourceProcessIdentifier: sourceProcessIdentifier,
+          missionControlRetryCount: missionControlRetryCount,
+          presentationID: presentationID
+        )
+      }
+    }
+    pendingPresentationID = presentationID
+    pendingPresentationWorkItem = workItem
+
+    if delay > 0 {
+      DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    } else {
+      DispatchQueue.main.async(execute: workItem)
+    }
+  }
+
+  private func presentWindow(
+    payload: SuggestionPopupPayload,
+    sourceProcessIdentifier: pid_t?,
+    missionControlRetryCount: Int,
+    presentationID: UUID
+  ) {
+    guard let window, pendingPresentationID == presentationID else {
+      return
+    }
+
+    pendingPresentationID = nil
+    pendingPresentationWorkItem = nil
+
+    if let sourceProcessIdentifier,
+      sourceApplication?.processIdentifier != sourceProcessIdentifier
+    {
+      return
+    }
+
+    if isMissionControlActive() {
+      guard missionControlRetryCount < 3 else {
+        return
+      }
+
+      schedulePresentation(
+        payload: payload,
+        sourceProcessIdentifier: sourceProcessIdentifier,
+        delay: 0.2,
+        missionControlRetryCount: missionControlRetryCount + 1
+      )
+      return
+    }
 
     if let screenFrame = targetScreen()?.visibleFrame {
       let size = window.contentViewController?.view.fittingSize ?? NSSize(width: 260, height: 210)
@@ -140,12 +233,74 @@ final class MockSuggestionsWindowController: NSWindowController, NSWindowDelegat
     }
 
     window.level = .screenSaver
+    window.collectionBehavior = suggestionsOverlayCollectionBehavior
     window.orderFrontRegardless()
     startDismissLifecycle(payload: payload)
   }
 
-  func windowWillClose(_ notification: Notification) {
-    stopDismissLifecycle()
+  private func cancelPendingPresentation() {
+    pendingPresentationWorkItem?.cancel()
+    pendingPresentationWorkItem = nil
+    pendingPresentationID = nil
+  }
+
+  private func restoreSourceApplicationForPresentation(
+    _ application: NSRunningApplication?
+  ) -> Bool {
+    guard let application,
+      shouldRestoreSourceApplication(application),
+      shouldTakeFocusBackToSourceApplication(application)
+    else {
+      return false
+    }
+
+    return application.activate(options: [])
+  }
+
+  private func shouldRestoreSourceApplication(_ application: NSRunningApplication) -> Bool {
+    guard !application.isTerminated else {
+      return false
+    }
+
+    guard application.processIdentifier != NSRunningApplication.current.processIdentifier else {
+      return false
+    }
+
+    return !isMissionControlApplication(application)
+  }
+
+  private func shouldTakeFocusBackToSourceApplication(
+    _ application: NSRunningApplication
+  ) -> Bool {
+    guard !application.isActive else {
+      return false
+    }
+
+    guard let frontmostApplication = NSWorkspace.shared.frontmostApplication else {
+      return true
+    }
+
+    if frontmostApplication.processIdentifier == application.processIdentifier {
+      return false
+    }
+
+    if frontmostApplication.processIdentifier == NSRunningApplication.current.processIdentifier {
+      return true
+    }
+
+    return isMissionControlApplication(frontmostApplication)
+  }
+
+  private func isMissionControlActive() -> Bool {
+    guard let frontmostApplication = NSWorkspace.shared.frontmostApplication else {
+      return false
+    }
+
+    return isMissionControlApplication(frontmostApplication)
+  }
+
+  private func isMissionControlApplication(_ application: NSRunningApplication?) -> Bool {
+    application?.bundleIdentifier == dockBundleIdentifier
   }
 
   private func startDismissLifecycle(payload: SuggestionPopupPayload) {
@@ -230,6 +385,7 @@ final class MockSuggestionsWindowController: NSWindowController, NSWindowDelegat
   }
 
   @objc private func dismissPopup() {
+    cancelPendingPresentation()
     stopDismissLifecycle()
     window?.orderOut(nil)
   }
