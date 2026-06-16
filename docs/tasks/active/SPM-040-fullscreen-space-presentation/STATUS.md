@@ -1,7 +1,7 @@
 # SPM-040 Fullscreen Space Presentation Status
 
 ## Current State
-- implemented and verified
+- implemented, verified, and pushed
 
 ## Done
 - Captured the fullscreen Space regression from user screenshot and discussion.
@@ -12,12 +12,13 @@
 - Reapplied overlay collection behavior at presentation time.
 - Ran `swift build`: passed.
 - Ran `./scripts/verify.sh`: passed.
+- Committed and pushed the fix to GitHub.
 
 ## In Progress
 - None.
 
 ## Next
-- Commit and push the fix to GitHub.
+- None.
 
 ## Decisions
 - Do not use deprecated `.activateIgnoringOtherApps`; ordinary source-app activation is enough on the supported macOS baseline.
@@ -30,3 +31,4 @@
 ## Verify Log
 - `swift build`: passed on 2026-06-16.
 - `./scripts/verify.sh`: passed on 2026-06-16; lint, typecheck/build, 45 tests, and app bundle.
+- `git push origin main`: pushed `44fa6e7` to GitHub on 2026-06-16.
