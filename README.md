@@ -98,3 +98,8 @@ identity with:
 ```sh
 ./scripts/create-local-codesign-identity.sh
 ```
+
+## License
+
+This project's source code is licensed under the MIT License. See
+[LICENSE](LICENSE).
