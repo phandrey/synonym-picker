@@ -45,6 +45,21 @@ After downloading the ZIP:
 The installer builds the app, copies it to `/Applications/SynonymPicker.app`,
 removes quarantine metadata, and opens the app.
 
+## Install From DMG
+
+For the simplest install, download `SynonymPicker.dmg` from the latest GitHub
+Release, open it, and drag `SynonymPicker.app` into `Applications`.
+
+If macOS blocks the first launch because the app is not notarized yet,
+right-click `SynonymPicker.app` and choose `Open`.
+
+The DMG contains the app only. Synonym Picker still needs `llama.cpp` on the
+Mac to run local AI inference:
+
+```sh
+brew install llama.cpp
+```
+
 ## First Run
 
 1. Click the sparkle icon in the macOS menu bar.
@@ -91,6 +106,12 @@ with the green `Code` button and run `./scripts/install.sh`.
 For a cleaner end-user download, create a GitHub Release and attach a signed or
 notarized app archive. The source ZIP from the green `Code` button is useful for
 developers, but normal users usually expect a Release asset.
+
+Build a release DMG locally with:
+
+```sh
+./scripts/build-dmg.sh
+```
 
 Current local builds may be ad-hoc signed unless you create a local signing
 identity with:
