@@ -1,0 +1,393 @@
+# Session Log
+
+## 2026-06-03
+- Создан отдельный project root `synonym-picker-mac/`.
+- Подтверждено, что корневые `memory/` и `docs/tasks/` относятся к другому проекту и не должны использоваться для этого приложения.
+- Context7 tool в текущем окружении не найден.
+- Проверено окружение:
+  - Swift 6.1.2 доступен.
+  - `xcodebuild` недоступен без полноценного Xcode.
+  - `swift format` доступен.
+  - `swiftlint` не установлен.
+- Создана активная задача `SPM-001-project-bootstrap`.
+- Реализован `SPM-001-project-bootstrap`:
+  - создана изолированная папка проекта;
+  - создан локальный spec-driven board;
+  - добавлен Swift Package `SynonymPickerCore`;
+  - добавлен verify script с локальными cache paths для sandbox;
+  - тесты переведены на Swift Testing, потому что `XCTest` недоступен в текущих Command Line Tools.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed).
+- `SPM-001-project-bootstrap` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-002-menu-bar-app-scaffold`.
+- Пользовательский install target для текущего MVP: локальная `.app` bundle для ручного копирования в `/Applications`.
+- Будущий публичный release target вынесен в backlog `SPM-003-personal-release-packaging`: `.zip`/`.dmg` для GitHub.
+- Реализован `SPM-002-menu-bar-app-scaffold`:
+  - добавлен executable product `SynonymPicker`;
+  - добавлен menu bar app через AppKit `NSStatusBar`;
+  - добавлено минималистичное полупрозрачное settings window на SwiftUI material;
+  - добавлен `Packaging/Info.plist`;
+  - добавлен `scripts/build-app.sh`, который собирает personal-install bundle `dist/SynonymPicker.app`.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-002-menu-bar-app-scaffold` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-004-settings-ui-polish`: уменьшить окно, сделать material легче/прозрачнее, типографику ближе к стандартному macOS system style.
+- Реализован `SPM-004-settings-ui-polish`:
+  - окно настроек уменьшено с 480pt до 380pt;
+  - отступы и spacing уменьшены;
+  - карточки и chips переведены на более легкий material;
+  - типографика упрощена до стандартных SwiftUI/macOS text styles без тяжелых кастомных весов;
+  - новый `dist/SynonymPicker.app` собран.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-004-settings-ui-polish` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-005-launch-visibility-fix`: пользователь не видит приложение после `open`, нужно открывать settings window на старте и сделать menu bar item видимым текстом.
+- Реализован `SPM-005-launch-visibility-fix`:
+  - settings window автоматически открывается при запуске;
+  - menu bar item теперь показывает `Syn` рядом с sparkles-иконкой.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-005-launch-visibility-fix` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-006-foreground-launch-fix`: прямой запуск бинарника не падал, но окно/menu bar не были видны пользователю после `open`; для personal MVP нужно сделать foreground app и явно вывести окно вперед.
+- Реализован `SPM-006-foreground-launch-fix`:
+  - `LSUIElement` убран из `Info.plist`;
+  - activation policy переключен на `.regular`;
+  - settings window явно выводится через `makeKeyAndOrderFront` и `orderFrontRegardless`;
+  - status item `Syn` сохранен.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-006-foreground-launch-fix` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-007-settings-reference-polish`: сделать окно еще прозрачнее и приблизить typography/spacing к предоставленному macOS-style референсу.
+- Реализован `SPM-007-settings-reference-polish`:
+  - settings UI перестроен в compact grid 2x2;
+  - панели и root background переведены на `ultraThinMaterial` с тонкими stroke-рамками;
+  - текст сокращен и уплотнен;
+  - SF Symbols увеличены, spacing ближе к utility-card референсу.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-007-settings-reference-polish` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-008-hotkey-selection-mock-flow`: настройка global hotkey и mock suggestions без чтения выделения, popup chooser и модели.
+- Реализован `SPM-008-hotkey-selection-mock-flow`:
+  - добавлен `AppState` для settings UI;
+  - Hotkey tile стала интерактивной;
+  - реализован local keyDown recorder для выбора сочетания;
+  - hotkey сохраняется в `UserDefaults`;
+  - global hotkey регистрируется через Carbon `RegisterEventHotKey`;
+  - по нажатию hotkey показывается mock suggestions window;
+  - README дополнен текущим mock flow.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-008-hotkey-selection-mock-flow` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-009-selection-reader`: чтение текущего выделения через clipboard fallback и отображение результата в mock popup.
+- Реализован `SPM-009-selection-reader`:
+  - добавлен `SelectionReader` с сохранением и восстановлением pasteboard;
+  - global hotkey теперь сначала пытается прочитать текущее выделение через `Cmd+C`;
+  - mock popup показывает выбранный текст или fallback, если выделение не удалось прочитать.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-009-selection-reader` перенесен в `docs/tasks/done/`.
+- Добавлена backlog-задача `SPM-010-popup-chooser`: навигация по popup стрелками, выбор Enter и кликом без реальной замены текста.
+- Финальный verify gate после обновления task board: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- Активирована задача `SPM-011-popup-dismiss-status-icon`: popup должен закрываться, а menu bar item должен быть явно видимым.
+- Реализован `SPM-011-popup-dismiss-status-icon`:
+  - popup теперь закрывается по таймеру;
+  - popup закрывается по клику;
+  - popup закрывается по Escape, если приложение получает key event;
+  - status item переведен в компактный квадратный icon slot с fallback `Syn`.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-011-popup-dismiss-status-icon` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-010-popup-chooser`:
+  - исправить hotkey recording, чтобы старый global hotkey не срабатывал во время записи;
+  - сделать hotkey labels независимыми от русской раскладки;
+  - добавить выбранную строку popup, стрелки, Enter/клик;
+  - добавить MVP-вставку выбранного mock-синонима через clipboard paste.
+- Deep press / Force Click вынесен в backlog-задачу `SPM-012-force-click-trigger`.
+- Реализован `SPM-010-popup-chooser`:
+  - при записи нового hotkey старый global hotkey временно отключается и не открывает popup;
+  - hotkey labels берутся из физической US-клавиатуры, поэтому русская раскладка не влияет на отображение;
+  - popup выбирает первый синоним по умолчанию;
+  - стрелки Up/Down меняют выбранный синоним;
+  - Enter и клик по строке подтверждают выбор;
+  - выбранный mock-синоним вставляется через MVP clipboard paste fallback.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-010-popup-chooser` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-013-hotkey-does-not-show-settings`: hotkey не должен поднимать Settings window; найден root cause в `.activateAllWindows` и автооткрытии Settings при каждом запуске.
+- Реализован `SPM-013-hotkey-does-not-show-settings`:
+  - Settings открывается на старте только если hotkey еще не настроен;
+  - при hotkey flow Settings window скрывается перед показом popup;
+  - popup больше не вызывает `.activateAllWindows`, поэтому не поднимает все окна приложения.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-013-hotkey-does-not-show-settings` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-014-accessibility-permission-flow`: приложение должно явно запрашивать и показывать Accessibility permission, потому что без него выделенный текст не читается и popup показывает `No selection`.
+- Реализован `SPM-014-accessibility-permission-flow`:
+  - добавлен `AccessibilityPermissionService`;
+  - Permissions tile показывает текущий Accessibility статус;
+  - Permissions tile вызывает macOS Accessibility prompt;
+  - статус разрешения обновляется при активации приложения и перед hotkey selection-read flow.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-014-accessibility-permission-flow` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-015-robust-selection-reader`: если Accessibility уже выдан, но selection все равно не читается, вероятная причина — фиксированная задержка 180 мс читает pasteboard до того, как foreground app успел выполнить copy.
+- Реализован `SPM-015-robust-selection-reader`:
+  - selection reader теперь ожидает изменения `NSPasteboard.changeCount` до 1.2 секунды вместо фиксированных 180 мс;
+  - clipboard по-прежнему сохраняется и восстанавливается;
+  - fallback popup показывает конкретную причину: permission inactive, source app did not copy text, or copied selection is empty/non-text.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-015-robust-selection-reader` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-016-stable-bundle-signing`: `codesign -dv` показал, что app bundle не подписан как стабильный bundle id (`Info.plist=not bound`, generated executable identifier), из-за чего Accessibility/TCC может показывать галочку, но `AXIsProcessTrusted()` для текущей копии возвращает false.
+- Реализован `SPM-016-stable-bundle-signing`:
+  - `scripts/build-app.sh` теперь подписывает весь `.app` bundle ad-hoc;
+  - `codesign -dv dist/SynonymPicker.app` теперь показывает `Identifier=local.synonym-picker.macos`;
+  - `Info.plist` входит в signature (`Info.plist entries=10`);
+  - добавлен `scripts/install-local.sh`, который пересобирает, сбрасывает Accessibility TCC для bundle id, переустанавливает app и открывает его.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-016-stable-bundle-signing` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-017-local-model-provider-mvp`: подключить локальный AI provider без бандла модели в репозитории; default fast profile — `Qwen3-1.7B Q4_K_M`, модель внешняя, будущий download/choice UI отдельной задачей.
+- Реализован `SPM-017-local-model-provider-mvp`:
+  - добавлен каталог моделей (`Qwen3 1.7B Q4_K_M` fast, `Qwen3 4B Q4_K_M` quality);
+  - модель не бандлится в app/repo;
+  - добавлен local OpenAI-compatible provider для `http://127.0.0.1:8080/v1/chat/completions`;
+  - popup показывает AI suggestions, если локальный provider доступен;
+  - если provider недоступен, popup показывает command для запуска fast profile;
+  - добавлен `docs/MODELS.md`.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-017-local-model-provider-mvp` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-018-qwen-no-think-prompt`: локальный `llama-server` установлен и отвечает, но Qwen3 без `/no_think` возвращает пустой `content` и reasoning в `reasoning_content`; ручной smoke test с `/no_think` вернул JSON за ~0.6 сек.
+- Реализован `SPM-018-qwen-no-think-prompt`:
+  - provider prompt теперь включает `/no_think`;
+  - `max_tokens` увеличен до 120;
+  - `docs/MODELS.md` обновлен no-think note.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-018-qwen-no-think-prompt` перенесен в `docs/tasks/done/`.
+- Активирована задача `SPM-019-stable-local-signing-identity`: текущая app ad-hoc signed, `security find-identity` показывает 0 valid identities; из-за меняющегося `CDHash` Accessibility может снова становиться inactive после rebuild/reinstall.
+- Реализованы scripts для `SPM-019-stable-local-signing-identity`, но task не закрыта:
+  - добавлен `scripts/create-local-codesign-identity.sh`;
+  - `scripts/build-app.sh` предпочитает `SynonymPicker Local Code Signing`, иначе ad-hoc fallback;
+  - `scripts/install-local.sh` больше не сбрасывает Accessibility при каждом install;
+  - verify gate прошел с ad-hoc fallback.
+- Blocker: создание trusted self-signed identity в login keychain заблокировано sandbox/reviewer как security-sensitive persistent change. Пользователь должен вручную выполнить `./scripts/create-local-codesign-identity.sh`, затем `./scripts/install-local.sh` и заново выдать Accessibility один раз.
+- Активирована задача `SPM-020-app-managed-llama-server`: `llama-server`, запущенный foreground из tool-сессии, работает; detached `nohup` из tool-сессии не остается жить. Нужно, чтобы app сам стартовал внешний `llama-server` при запуске.
+- Реализован `SPM-020-app-managed-llama-server`:
+  - добавлен `LlamaServerManager`;
+  - приложение ищет `/opt/homebrew/bin/llama-server` и `/usr/local/bin/llama-server`;
+  - если `/v1/models` уже отвечает на `127.0.0.1:8080`, дубль процесса не запускается;
+  - если сервер не отвечает, приложение стартует fast profile `bartowski/Qwen_Qwen3-1.7B-GGUF:Q4_K_M`;
+  - status tile модели показывает `Missing`, `Starting`, `External`, `Ready`, `Failed`;
+  - hotkey flow перед запросом синонимов ждет runtime и показывает понятное сообщение, если модель еще стартует или runtime не установлен;
+  - `docs/MODELS.md` обновлен под app-managed runtime без бандла модели.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- `SPM-020-app-managed-llama-server` перенесен в `docs/tasks/done/`.
+- Пользователь сообщил, что после ручных команд Accessibility все равно показывает inactive.
+- Проверка показала фактическую причину:
+  - `/Applications/SynonymPicker.app` все еще `Signature=adhoc`;
+  - `security find-identity -v -p codesigning` показывает `0 valid identities found`.
+- Для `SPM-019-stable-local-signing-identity` исправлены scripts:
+  - `scripts/build-app.sh` больше не ищет signing identity с временным `HOME=.build/home`;
+  - `scripts/create-local-codesign-identity.sh` теперь использует default user keychain и валидирует identity после импорта;
+  - `scripts/install-local.sh` печатает installed signing info и предупреждает, если `.app` все еще ad-hoc signed.
+- Verify gate: lint ok, typecheck ok, tests ok (6 tests passed), app bundle ok.
+- По пользовательским smoke-test скринам активирована и реализована `SPM-021-synonym-quality-minimum`:
+  - provider теперь запрашивает 8 кандидатов;
+  - provider делает один retry, если после фильтра осталось меньше 5 вариантов;
+  - prompt требует реальные русские синонимы, ту же часть речи/форму и смесь нейтральных/выразительных/литературных вариантов;
+  - post-processing фильтрует не-слова, очевидные варианты исходного слова и артефакты вроде `...образно`;
+  - добавлены тесты на near-duplicate и invalid-looking values.
+- Созданы backlog-задачи:
+  - `SPM-022-context-window-reader`: читать примерно 3 предложения вокруг выделенного слова;
+  - `SPM-023-lexical-quality-engine`: оценить морфологию/тезаурусы/ранжирование для качества.
+- Verify gate: lint ok, typecheck ok, tests ok (8 tests passed), app bundle ok.
+- `SPM-021-synonym-quality-minimum` перенесен в `docs/tasks/done/`.
+- По smoke-test скрину `срал -> сжал/сжимал` активирована и реализована `SPM-022-context-window-reader`:
+  - добавлен `TextContextExtractor` в core;
+  - добавлен Accessibility reader для focused text element;
+  - `SelectionReader` пытается захватить context до clipboard-copy fallback;
+  - `LocalSynonymProvider` получает optional context;
+  - prompt использует context для смысла, запрещает typo-correction на похожие по буквам слова и не должен цензурировать обсценный/разговорный смысл;
+  - добавлены unit tests для context extraction.
+- Verify gate: lint ok, typecheck ok, tests ok (11 tests passed), app bundle ok.
+- `SPM-022-context-window-reader` перенесен в `docs/tasks/done/`.
+- По запросу пользователя реализована `SPM-024-contextual-editor-prompt` без добавления latency-heavy extra calls:
+  - prompt теперь формулирует задачу как контекстную редакторскую замену, а не generic synonym generation;
+  - prompt требует hidden self-check: смысл в контексте, часть речи/форма, вставляемость в исходное предложение;
+  - prompt явно запрещает typo-correction на похожие слова (`срал` -> `сжал`/`сжимал`);
+  - prompt сохраняет разговорный/обсценный смысл вместо цензурирования;
+  - temperature снижена до `0.35` на первом проходе и `0.55` на retry.
+- Verify gate: lint ok, typecheck ok, tests ok (11 tests passed), app bundle ok.
+- `SPM-024-contextual-editor-prompt` перенесен в `docs/tasks/done/`.
+- По пользовательскому запросу на лидерборд реализована `SPM-025-contextual-ranking-leaderboard`:
+  - добавлен `RankedSynonymCandidate` в core;
+  - post-processing теперь умеет сортировать кандидаты по contextual score;
+  - provider просит модель вернуть JSON objects `{word, score}`;
+  - parser поддерживает и новый ranked JSON, и старый массив строк;
+  - popup получает уже отсортированный top после фильтрации;
+  - обязательный второй запрос не добавлен, retry остается только если после фильтра меньше 5 вариантов.
+- Verify gate: lint ok, typecheck ok, tests ok (13 tests passed), app bundle ok.
+- `SPM-025-contextual-ranking-leaderboard` перенесен в `docs/tasks/done/`.
+- Пользователь сообщил регрессию после ranked JSON: приложение долго думает и показывает 1 вариант (`веселый` -> `весёлый`).
+- Реализована `SPM-026-fast-ranked-prompt-regression`:
+  - heavy `{word, score}` prompt заменен на ordered JSON string array;
+  - `max_tokens` снижен с `360` до `190`;
+  - parser compatibility для ranked objects сохранен на будущее;
+  - duplicate filtering теперь нормализует `ё -> е`;
+  - добавлен тест, что `веселый` и `весёлый` считаются одним словом.
+- Verify gate: lint ok, typecheck ok, tests ok (14 tests passed), app bundle ok.
+- `SPM-026-fast-ranked-prompt-regression` перенесен в `docs/tasks/done/`.
+- По запросу пользователя реализована `SPM-027-app-icon-logo`:
+  - исходный PNG скопирован в `Packaging/AppIconSource.png`;
+  - сгенерирован `Packaging/AppIcon.icns`;
+  - `Packaging/Info.plist` получил `CFBundleIconFile = AppIcon`;
+  - `scripts/build-app.sh` копирует icon в `Contents/Resources/AppIcon.icns`;
+  - проверено, что built app содержит icon и `Info.plist` ссылается на него.
+- Verify gate: lint ok, typecheck ok, tests ok (14 tests passed), app bundle ok.
+- `SPM-027-app-icon-logo` перенесен в `docs/tasks/done/`.
+- По пользовательскому скрину `веселый -> Model not ready / Local model did not return usable synonyms` реализована `SPM-028-model-response-hardening`:
+  - parser ответа модели вынесен в `SynonymPickerCore` и покрыт unit tests;
+  - parser поддерживает JSON string arrays, embedded JSON arrays, ranked object aliases и русские ключи `слово`/`синоним`/`замена`;
+  - prompt явно запрещает считать `е`/`ё` вариантом синонима: `веселый` и `весёлый` считаются одним исходным словом;
+  - post-processing добавил легкий guard грамматической формы для русских adjective-like слов;
+  - UI больше не показывает `Model not ready`, когда сервер доступен, но ответ модели отфильтровался до пустого списка.
+- Verify gate: lint ok, typecheck/build ok, tests ok (21 tests passed), app bundle ok.
+- `SPM-028-model-response-hardening` перенесен в `docs/tasks/done/`.
+- По пользовательским smoke-test скринам с нестабильной выдачей для `хорошо` и `вкусным` активирована `SPM-029-fast-lexical-quality-fallback`.
+- Scope: маленький локальный seed-лексикон для частых слов, immediate return при достаточном количестве кандидатов, приведение формы прилагательных, более строгий prompt; без смены модели и без тяжелого словаря.
+- Реализована `SPM-029-fast-lexical-quality-fallback`:
+  - добавлен `FastSynonymLexicon` для частых smoke-test слов: `хорошо`, `вкусный`, `хороший`, `классный`, `скучный`, `смешной`, `веселый`, `грустный` и связанных наречий;
+  - provider возвращает локальные seed suggestions сразу, если после нормализации есть минимум 5 вариантов;
+  - модель остается fallback для слов вне seed-лексикона;
+  - post-processing умеет приводить базовые формы прилагательных к форме выделенного слова, например `аппетитный -> аппетитным`;
+  - prompt ужесточен против приветствий, продолжения предложения, неверной части речи и базовой формы прилагательных.
+- Verify gate: lint ok, typecheck/build ok, tests ok (26 tests passed), app bundle ok.
+- `SPM-029-fast-lexical-quality-fallback` перенесен в `docs/tasks/done/`.
+- По предложенному пользователем большому context-editor prompt активирована `SPM-030-compact-context-quality-prompt`.
+- Scope: взять полезные скрытые критерии качества и отдельное предложение, но сохранить короткий JSON array output для скорости локальной Qwen 1.7B.
+- Реализована `SPM-030-compact-context-quality-prompt`:
+  - `TextContext` теперь хранит компактный контекст и отдельное предложение с выделением;
+  - `TextContextExtractor` извлекает selected sentence вокруг highlighted range;
+  - prompt передает модели `Короткий контекст` и `Предложение` отдельно;
+  - hidden quality criteria включают смысл, часть речи, грамматику, стиль, тон, формальность, соседние связанные слова, звучание всего предложения и запрет на чрезмерно литературные замены;
+  - output сохранен коротким JSON-массивом строк без анализа/оценок.
+- Verify gate: lint ok, typecheck/build ok, tests ok (27 tests passed), app bundle ok.
+- `SPM-030-compact-context-quality-prompt` перенесен в `docs/tasks/done/`.
+- По пользовательскому скрину `сложные -> No usable synonyms` активирована `SPM-031-common-adjective-fast-coverage`.
+- Root cause: `сложный` не покрыт fast lexicon, поэтому запрос шел в Qwen, а ответ модели мог полностью отфильтроваться.
+- Реализована `SPM-031-common-adjective-fast-coverage`:
+  - добавлены fast lexicon entries для `сложный`, `быстрый`, `медленный`, `простой/простый`, `важный`, `интересный`, `легкий`, `трудный`, `сильный`, `слабый`, `плохой`;
+  - `сложные` теперь возвращает plural adjective replacements из fast layer без обращения к модели;
+  - добавлены unit tests для `сложные` и набора частых plural adjectives.
+- Verify gate: lint ok, typecheck/build ok, tests ok (29 tests passed), app bundle ok.
+- `SPM-031-common-adjective-fast-coverage` перенесен в `docs/tasks/done/`.
+- По пользовательским скринам и подозрению, что модель не используется для простых слов, реализована `SPM-032-parser-lexicon-quality-hardening`:
+  - подтверждено поведение: `LocalSynonymProvider` сначала возвращает `FastSynonymLexicon`, если после фильтра есть минимум 5 вариантов; модель используется только как fallback;
+  - parser теперь разбирает comma-separated plain text и labeled plain text вроде `Синонимы: обычные, типовые`;
+  - добавлены fast lexicon entries для `стандартный`, `локальный`, `свежий`;
+  - fast adjective lemma lookup теперь пробует hard/soft варианты для неоднозначных окончаний, например `свежая -> свежий`;
+  - post-processing исправлен для velar stems, например `мягкий -> мягкая`, а не malformed форма;
+  - добавлены regression tests по словам со скринов и plain-text parser fallback.
+- Verify gate: lint ok, typecheck/build ok, tests ok (32 tests passed), app bundle ok.
+- `SPM-032-parser-lexicon-quality-hardening` перенесен в `docs/tasks/done/`.
+- Пользователь уточнил продуктовый target: fast coverage не нужен; каждый lookup должен обращаться к AI-модели и генерировать контекстные синонимы, желательно за 2-3 секунды.
+- Реализована `SPM-033-model-first-synonym-generation`:
+  - `LocalSynonymProvider` больше не вызывает `FastSynonymLexicon` и не возвращает seed suggestions до модели;
+  - `FastSynonymLexicon.swift` и его tests удалены из проекта;
+  - lookup делает один model completion request с timeout 2.8 секунды;
+  - retry-цикл удален, чтобы не уходить за latency budget;
+  - hotkey runtime wait уменьшен с 8 до 2.5 секунды для cold/unavailable модели;
+  - parser/post-processing hardening сохранены для model output;
+  - добавлены morphology regression tests для model-returned velar adjective bases.
+- Verify gate: lint ok, typecheck/build ok, tests ok (28 tests passed), app bundle ok.
+- Live CLI smoke test не завершен: порт `8080` показал `llama-server` listener через `lsof`, но `/v1/models` отказал в соединении; пользовательский процесс не убивался.
+- `SPM-033-model-first-synonym-generation` перенесен в `docs/tasks/done/`.
+- По пользовательским скринам активирована и реализована `SPM-034-verb-quality-telegram-overlay`:
+  - popup поднят на `.screenSaver` window level;
+  - popup больше не скрывается при деактивации приложения;
+  - popup позиционируется на экране с курсором;
+  - prompt теперь требует сохранять форму глагола и не возвращать инфинитив для личной/прошедшей формы;
+  - prompt теперь просит 4-8 хороших вариантов вместо ровно 8;
+  - post-processing rejects same-lexeme verb variants, например `переделывать`/`переделать` для `переделывал`;
+  - post-processing checks broad finite verb shape, например `попробуем` допускает `попытаемся`/`проверим`/`протестируем`, но не `попробовать`;
+  - добавлены regression tests для `попробуем` и `переделывал`.
+- Verify gate: lint ok, typecheck/build ok, tests ok (30 tests passed), app bundle ok.
+- Install gate: `./scripts/install-local.sh` passed, `/Applications/SynonymPicker.app` replaced and opened.
+- `SPM-034-verb-quality-telegram-overlay` перенесен в `docs/tasks/done/`.
+- По запросу пользователя активирована `SPM-035-model-quality-benchmark-overlay-hardening`:
+  - пользователь подтвердил, что fast coverage не нужен, каждый подбор должен идти через AI-модель;
+  - latency budget расширен до условных 5 секунд ради качества;
+  - scope: сильнее модель по умолчанию, список кандидатов, строгий JSON object response, benchmark русских кейсов, popup overlay hardening для Telegram/других приложений;
+  - `SPM-019-stable-local-signing-identity` остается отдельной активной задачей, заблокированной ручной keychain/trust настройкой.
+- Реализуется `SPM-035-model-quality-benchmark-overlay-hardening`:
+  - default model profile переключен с `Qwen3 1.7B` на `T-Lite IT 1.0 Q4_K_S`;
+  - добавлены профили `Qwen2.5 7B`, `Qwen3 4B`, `Qwen3 8B`, legacy `Qwen3 1.7B`;
+  - model request/runtime wait расширены до 5 секунд;
+  - model output переведен на JSON object `{"synonyms":[...]}` с `response_format`;
+  - parser поддерживает object response с массивом строк или ranked objects;
+  - popup использует `.canJoinAllApplications` и больше не использует `.transient`;
+  - добавлены benchmark fixture/script для русских кейсов пользователя.
+- Validation/install for `SPM-035-model-quality-benchmark-overlay-hardening`:
+  - first verify run failed on missing Swift `return` in `SynonymResponseParser`, then fixed;
+  - `./scripts/verify.sh` passed: lint, typecheck/build, 32 tests, app bundle;
+  - `node --check scripts/benchmark-models.mjs` passed;
+  - `./scripts/install-local.sh` passed and installed `/Applications/SynonymPicker.app`;
+  - installed bundle is still ad-hoc signed, so Accessibility trust may need manual re-grant;
+  - live model smoke is open: `curl http://127.0.0.1:8080/v1/models` returned connection refused and `llama-server.log` had not updated since 2026-06-07.
+- 2026-06-09: пользователь разрешил вручную запустить выбранную локальную модель и benchmark для `SPM-035`.
+- `SPM-035` T-Lite benchmark result:
+  - server downloaded/loaded `DefaultDF/T-Lite-It-1.0-Quants-GGUF:Q4_K_S` and became ready;
+  - `стандартные`, `сложные`, `хорошо` were acceptable;
+  - `попробуем` timed out at 5s;
+  - `переделывал` produced malformed JSON and wrong imperative/same-lexeme variants;
+  - `быстро` produced `быстро - ...` strings;
+  - conclusion: T-Lite should not remain default without further fixes; compare Qwen candidates next.
+- Tried server-level `--json-schema` for `SPM-035`, but current `llama-server` returned `HTTP 400 Failed to initialize samplers` even without per-request `response_format`; reverted code/docs to no server-level schema.
+- First `Qwen3 4B` benchmark was fast but weak (`попробуем` repeated source, `сложные` had mixed-language garbage); benchmark prompt was then expanded to mirror the app prompt before making a model decision.
+- Second `Qwen3 4B` benchmark with app-like prompt passed key smoke cases:
+  - `попробуем`: 4208 ms, filtered `попытаемся`, `проверим`, `протестируем`;
+  - `переделывал`: 1227 ms, filtered `исправлял`, `дорабатывал`, `перерабатывал`, `отредактировал`;
+  - `стандартные`, `сложные`, `хорошо` acceptable and under ~1.2s;
+  - `локальные` only produced `местные`; acceptable as non-empty but low coverage;
+  - `быстро` included bad adjective `быстрый`, so added adverb post-processing guard.
+- Decision changed: default profile should be `Qwen3 4B Q4_K_M`, not T-Lite.
+- Final `SPM-035` implementation state on 2026-06-09:
+  - app default profile changed to `Qwen3 4B Q4_K_M`;
+  - app prompt examples now use `{"synonyms":[...]}` object format;
+  - parser handles markdown-wrapped object responses;
+  - post-processor rejects adjective forms for short adverb sources such as `быстро -> быстрый`;
+  - `./scripts/verify.sh` passed with 34 tests;
+  - `/Applications/SynonymPicker.app` reinstalled;
+  - benchmark `llama-server` stopped; app can start cached Qwen3 4B on next hotkey if no external server is running;
+  - remaining manual checks: Accessibility trust after ad-hoc reinstall and Telegram overlay visibility.
+- 2026-06-09: пользователь сообщил, что popup не появляется поверх Telegram/Chrome fullscreen windows, хотя поверх обычных окон работает; также попросил dismiss popup при клике в случайную область и 50 дополнительных контекстных тестов.
+- Активирована `SPM-036-fullscreen-overlay-clickaway-quality-audit`: scope fullscreen non-activating overlay, outside-click dismissal, 50-case Qwen3 4B audit, verify/install.
+- Реализована и установлена `SPM-036-fullscreen-overlay-clickaway-quality-audit`:
+  - suggestions popup переведен на non-activating HUD panel с `.canJoinAllApplications`, `.canJoinAllSpaces`, `.fullScreenAuxiliary`, `.stationary`, `.ignoresCycle` и `.screenSaver` level;
+  - удалена активация `SynonymPicker` при показе popup;
+  - добавлены local/global mouse monitors для dismiss при клике вне popup;
+  - repair AI-запрос отделен от основного prompt, стал короче, получил запрет повтора исходного слова, timeout 3.5s и `max_tokens` 100;
+  - benchmark/filter синхронизирован с Swift post-processing по форме глагола/прилагательного, mixed-script, single-word replacements и adverb exceptions;
+  - исправлены ложные фильтры `режим` (`-им`), `скорость` (`-ость`/`-ть`) и `вручную` (adverb exception);
+  - добавлены regression tests для `режим`, `скорость`, `вручную`;
+  - финальный 50-case benchmark на Qwen3 4B: 50/50 non-empty, 0 over 5s, avg 1987ms, p95 3952ms, max 4953ms, 5/5 repair successes;
+  - `./scripts/verify.sh` passed: lint, build, 40 tests, app bundle;
+  - `/Applications/SynonymPicker.app` installed and opened;
+  - `127.0.0.1:8080/v1/models` отвечает `Qwen/Qwen3-4B-GGUF:Q4_K_M`;
+  - temporary benchmark `llama-server` on 8081 stopped.
+- `SPM-036` остается active до ручного подтверждения: fullscreen Telegram/Chrome overlay и outside-click dismissal нельзя надежно проверить из CLI.
+- Residual quality risk: benchmark technical gate passed, but some model candidates remain semantically weak (`выбираю -> бережу`, `скорость -> прыжок`, odd style variants), so future work may need a stronger model or semantic reranker.
+- Пользователь подтвердил, что `SPM-036` работает: fullscreen overlay и outside-click dismiss прошли ручную проверку.
+- Активирована и реализована `SPM-037-status-menu-controls`:
+  - status bar menu больше не показывает `Settings...`;
+  - добавлены native menu rows `Hotkey: ...`, `Permissions: ...`, disabled `Model: Qwen3 4B`, `Quit Synonym Picker`;
+  - `Hotkey` запускает запись хоткея напрямую из меню без открытия кастомного SwiftUI Settings window;
+  - `HotkeyRecorder` теперь использует local и global key monitors, чтобы поймать следующий shortcut после закрытия меню;
+  - `Permissions` запускает Accessibility prompt и открывает macOS Accessibility privacy pane;
+  - first launch больше не открывает settings window;
+  - старые `SettingsView`/`SettingsWindowController` оставлены в коде, но не используются в обычном status menu flow;
+  - `./scripts/verify.sh` passed: lint, build, 40 tests, app bundle;
+  - `/Applications/SynonymPicker.app` installed and opened.
+- 2026-06-10 16:20 MSK: реализована и установлена `SPM-038-public-github-release-prep`:
+  - model status menu row стал активным для first-run download flow: download, percent progress, checkmark, retry/missing runtime states;
+  - app больше не пытается молча скачать модель при hotkey, если модель отсутствует; показывает понятное сообщение и отправляет пользователя в menu bar model row;
+  - добавлена cache/progress detection для `Qwen/Qwen3-4B-GGUF:Q4_K_M`;
+  - selected synonym highlight заменен с темно-синего на dark pink/magenta под цвет логотипа;
+  - public install docs обновлены: `README.md`, `docs/MODELS.md`, новый `scripts/install.sh`, `.gitignore`;
+  - post-processing усилен для `репозиторий`, `напрямую`, source-word phrases, noun-vs-verb, same-lexeme reflexive verbs (`появится -> появляется`);
+  - добавлены regression tests, теперь `./scripts/verify.sh` проходит с 45 tests;
+  - несколько 50-case public benchmark runs использовались для поиска ошибок, но финальный тяжелый benchmark остановлен по просьбе пользователя из-за нагрузки на компьютер;
+  - `/Applications/SynonymPicker.app` переустановлен и открыт;
+  - bundle остается ad-hoc signed, значит Accessibility trust может потребовать повторного разрешения после reinstall.
+- 2026-06-10: hotfix fullscreen overlay regression after public-release prep:
+  - symptom: suggestions popup again became unreliable over apps in fullscreen mode;
+  - likely cause: popup was being shown with `makeKeyAndOrderFront(nil)`, which can make the app/window key and interfere with fullscreen Spaces despite `.nonactivatingPanel`;
+  - fix: removed `makeKeyAndOrderFront(nil)` from suggestions popup display and set `becomesKeyOnlyIfNeeded = true`, while keeping `.screenSaver` level, `.canJoinAllApplications`, `.canJoinAllSpaces`, `.fullScreenAuxiliary`, and `orderFrontRegardless()`;
+  - `./scripts/verify.sh` passed with 45 tests;
+  - `/Applications/SynonymPicker.app` reinstalled and opened.
